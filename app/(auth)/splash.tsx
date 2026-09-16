@@ -2,25 +2,23 @@ import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
 
-const NETFLIX_RED = "#E50914";
-
 export default function SplashScreen() {
-  // Stage 1: icon starts BIG and shrinks down to normal size (the "splash")
+  //icon
   const iconScale = useRef(new Animated.Value(50)).current;
   const iconOpacity = useRef(new Animated.Value(50)).current;
   const glowOpacity = useRef(new Animated.Value(10)).current;
 
-  // Stage 2: once settled, the icon slides left to make room for the title
+  //  the icon slides
   const iconTranslateX = useRef(new Animated.Value(100)).current;
 
-  // Stage 3: the title fades/writes in on the right side of the icon
+  // the title fades/writes in on the right side of the icon
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateX = useRef(new Animated.Value(60)).current;
 
   useEffect(() => {
     Animated.sequence([
-      // Stage 1: icon bursts in big and shrinks to its resting size,
-      // the red glow behind it fades out as it settles — that's the "splash"
+      //  icon bursts in big and shrinks to its resting size,
+
       Animated.parallel([
         Animated.timing(iconOpacity, {
           toValue: 1,
@@ -65,7 +63,7 @@ export default function SplashScreen() {
     }, 2400);
 
     return () => clearTimeout(timer);
-  }, []);
+  });
 
   return (
     <View style={styles.container}>

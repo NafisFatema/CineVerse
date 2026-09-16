@@ -1,52 +1,60 @@
-import { INITIAL_USERS, MockUser, UserRole } from "@/data/users";
-import { createContext, ReactNode, useContext, useState } from "react";
+import { MockUser } from "@/data/users";
+import { api } from "@/services/api";
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+  useState,
+} from "react";
+import { UsersAction, UsersState, usersReducer } from "./users-reducer";
 
-type UsersContextType = {
-  users: MockUser[];
-  deleteUser: (email: string) => void;
-  updateUserRole: (email: string, role: UserRole) => void;
-  findUserByCredentials: (
-    email: string,
-    password: string,
-  ) => MockUser | undefined;
-};
+interface UsersContextValue {
+  users: UsersState;
+  dispatch: React.Dispatch<UsersAction>;
+  isLoading: boolean;
+  error: string | null;
+  reload: () => void;
+}
 
-const UsersContext = createContext<UsersContextType | undefined>(undefined);
+const UsersContext = createContext<UsersContextValue | null>(null);
 
 export function UsersProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<MockUser[]>(INITIAL_USERS);
+  const [users, dispatch] = useReducer(usersReducer, []);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  function deleteUser(email: string) {
-    setUsers((prev) => prev.filter((u) => u.email !== email));
+  function loadUsers() {
+    setIsLoading(true);
+    setError(null);
+    api
+      .get<MockUser[]>("/users")
+      .then(({ data }) => {
+        dispatch({ type: "LOAD", payload: data });
+      })
+      .catch((err) => {
+        setError("Could not load users. Is the server running?");
+        console.error(err);
+      })
+      .finally(() => setIsLoading(false));
   }
 
-  function updateUserRole(email: string, role: UserRole) {
-    setUsers((prev) =>
-      prev.map((u) => (u.email === email ? { ...u, role } : u)),
-    );
-  }
-
-  function findUserByCredentials(email: string, password: string) {
-    return users.find(
-      (u) =>
-        u.email.toLowerCase() === email.toLowerCase() &&
-        u.password === password,
-    );
-  }
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
   return (
     <UsersContext.Provider
-      value={{ users, deleteUser, updateUserRole, findUserByCredentials }}
+      value={{ users, dispatch, isLoading, error, reload: loadUsers }}
     >
       {children}
     </UsersContext.Provider>
   );
 }
 
-export function useUsers() {
-  const context = useContext(UsersContext);
-  if (!context) {
-    throw new Error("useUsers must be used within a UsersProvider");
-  }
-  return context;
+export function useUsers(): UsersContextValue {
+  const ctx = useContext(UsersContext);
+  if (!ctx) throw new Error("useUsers must be used within a UsersProvider");
+  return ctx;
 }

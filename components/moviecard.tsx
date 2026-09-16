@@ -9,17 +9,19 @@ type MovieCardProps = {
 
 export default function MovieCard({ movie, onPress }: MovieCardProps) {
   return (
-    <Pressable style={styles.card} onPress={onPress}>
-      {/* This wrapper has a fixed shape (aspectRatio + overflow hidden).
-          The Image inside is forced to exactly fill it via absoluteFillObject,
-          so no matter how big the original photo file is, it can never
-          push past this box. */}
+    <Pressable
+      style={styles.card}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${movie.title}, ${movie.year}`}
+    >
       <View style={[styles.posterBox, { backgroundColor: movie.color }]}>
-        {movie.poster ? (
+        {movie.poster_url ? (
           <Image
-            source={movie.poster}
+            source={{ uri: movie.poster_url }}
             style={StyleSheet.absoluteFillObject}
-            resizeMode="contain"
+            resizeMode="cover"
+            accessibilityLabel={`${movie.title} poster`}
           />
         ) : (
           <View style={styles.placeholderIcon}>
@@ -41,30 +43,15 @@ export default function MovieCard({ movie, onPress }: MovieCardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    width: "47%",
-    marginBottom: 20,
-  },
+  card: { width: "47%", marginBottom: 20 },
   posterBox: {
     width: "100%",
     aspectRatio: 2 / 3,
     borderRadius: 10,
     marginBottom: 8,
-    overflow: "hidden", // critical — clips anything that tries to render bigger than this box
+    overflow: "hidden",
   },
-  placeholderIcon: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  year: {
-    color: "#9A9AA8",
-    fontSize: 12,
-    marginTop: 2,
-  },
+  placeholderIcon: { flex: 1, alignItems: "center", justifyContent: "center" },
+  title: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
+  year: { color: "#9A9AA8", fontSize: 12, marginTop: 2 },
 });

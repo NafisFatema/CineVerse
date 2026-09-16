@@ -6,6 +6,7 @@ import { useUsers } from "@/context/usercontext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -24,8 +25,8 @@ type ManageItem = {
 };
 
 export default function AdminDashboardScreen() {
-  const { movies } = useMovies();
-  const { users } = useUsers();
+  const { movies, isLoading: moviesLoading } = useMovies();
+  const { users, isLoading: usersLoading } = useUsers();
 
   function goTo(label: string) {
     Alert.alert(label, "This screen isn't built yet.");
@@ -94,6 +95,8 @@ export default function AdminDashboardScreen() {
     router.replace("/(auth)/welcome");
   }
 
+  const statsReady = !moviesLoading && !usersLoading;
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
@@ -105,30 +108,43 @@ export default function AdminDashboardScreen() {
           </View>
         </View>
 
-        <Pressable onPress={handleLogout} style={styles.logoutButton}>
+        <Pressable
+          onPress={handleLogout}
+          style={styles.logoutButton}
+          accessibilityRole="button"
+          accessibilityLabel="Log out"
+        >
           <Ionicons name="log-out-outline" size={22} color="#FF6B6B" />
         </Pressable>
       </View>
 
       <View style={styles.statsRow}>
-        <StatCard
-          label="Movies"
-          value={String(movies.length)}
-          icon="film-outline"
-          color="#E50914"
-        />
-        <StatCard
-          label="Users"
-          value={String(users.length)}
-          icon="people-outline"
-          color="#4F8EF7"
-        />
-        <StatCard
-          label="Cinemas"
-          value="0"
-          icon="business-outline"
-          color="#F4A62A"
-        />
+        {statsReady ? (
+          <>
+            <StatCard
+              label="Movies"
+              value={String(movies.length)}
+              icon="film-outline"
+              color="#E50914"
+            />
+            <StatCard
+              label="Users"
+              value={String(users.length)}
+              icon="people-outline"
+              color="#4F8EF7"
+            />
+            <StatCard
+              label="Cinemas"
+              value="0"
+              icon="business-outline"
+              color="#F4A62A"
+            />
+          </>
+        ) : (
+          <View style={styles.statsLoading}>
+            <ActivityIndicator color="#E50914" />
+          </View>
+        )}
       </View>
 
       <Text style={styles.sectionTitle}>Manage</Text>
@@ -166,7 +182,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  statsRow: { flexDirection: "row", gap: 10, marginBottom: 28 },
+  statsRow: { flexDirection: "row", gap: 10, marginBottom: 28, minHeight: 90 },
+  statsLoading: { flex: 1, justifyContent: "center", alignItems: "center" },
   sectionTitle: {
     color: "#FFFFFF",
     fontSize: 16,
