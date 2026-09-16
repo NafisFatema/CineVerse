@@ -20,6 +20,9 @@ export default function ManageCard({
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityHint={subtitle}
     >
       <View style={[styles.iconBox, { backgroundColor: `${color}22` }]}>
         <Ionicons name={icon} size={22} color={color} />
@@ -47,9 +50,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     marginBottom: 12,
   },
-  cardPressed: {
-    opacity: 0.75,
-  },
+  cardPressed: { opacity: 0.75 },
   iconBox: {
     width: 44,
     height: 44,
@@ -58,17 +59,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 14,
   },
-  textBlock: {
-    flex: 1,
-  },
-  title: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  subtitle: {
-    color: "#9A9AA8",
-    fontSize: 12,
-    marginTop: 2,
-  },
+  textBlock: { flex: 1 },
+  title: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  subtitle: { color: "#9A9AA8", fontSize: 12, marginTop: 2 },
 });

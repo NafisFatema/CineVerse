@@ -43,13 +43,20 @@ export default function WelcomeScreen() {
         <Text style={styles.brand}>CineVerse</Text>
 
         <View style={styles.headerIcons}>
-          <Pressable onPress={handleSearchPress} style={styles.iconButton}>
+          <Pressable
+            onPress={handleSearchPress}
+            style={styles.iconButton}
+            accessibilityRole="button"
+            accessibilityLabel="Search movies"
+          >
             <Ionicons name="search" size={22} color="#FFFFFF" />
           </Pressable>
 
           <Pressable
             onPress={() => router.push("/(auth)/login")}
             style={styles.iconButton}
+            accessibilityRole="button"
+            accessibilityLabel="Log in"
           >
             <Ionicons name="log-in-outline" size={22} color="#FFFFFF" />
           </Pressable>
@@ -59,7 +66,7 @@ export default function WelcomeScreen() {
       {/* Movie grid */}
       <FlatList
         data={movies}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.grid}
@@ -73,7 +80,12 @@ export default function WelcomeScreen() {
 
       {/* Bottom tab bar — 3 tabs (Search already lives in the header above) */}
       <View style={styles.tabBar}>
-        <Pressable style={styles.tabItem} onPress={() => setActiveTab("home")}>
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => setActiveTab("home")}
+          accessibilityRole="button"
+          accessibilityLabel="Home tab"
+        >
           <Ionicons
             name={activeTab === "home" ? "home" : "home-outline"}
             size={22}
@@ -89,7 +101,12 @@ export default function WelcomeScreen() {
           </Text>
         </Pressable>
 
-        <Pressable style={styles.tabItem} onPress={handleWatchlistPress}>
+        <Pressable
+          style={styles.tabItem}
+          onPress={handleWatchlistPress}
+          accessibilityRole="button"
+          accessibilityLabel="Watchlist tab"
+        >
           <Ionicons
             name={activeTab === "watchlist" ? "bookmark" : "bookmark-outline"}
             size={22}
@@ -105,7 +122,12 @@ export default function WelcomeScreen() {
           </Text>
         </Pressable>
 
-        <Pressable style={styles.tabItem} onPress={handleProfilePress}>
+        <Pressable
+          style={styles.tabItem}
+          onPress={handleProfilePress}
+          accessibilityRole="button"
+          accessibilityLabel="Profile tab"
+        >
           <Ionicons
             name={activeTab === "profile" ? "person" : "person-outline"}
             size={22}

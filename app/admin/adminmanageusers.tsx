@@ -1,9 +1,12 @@
+import ErrorScreen from "@/components/error-screen";
 import SearchBar from "@/components/searchbar";
 import { useUsers } from "@/context/usercontext";
 import { MockUser } from "@/data/users";
+import { api } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Pressable,
@@ -25,7 +28,7 @@ const ROLE_COLORS: Record<MockUser["role"], string> = {
 };
 
 export default function AdminManageUsersScreen() {
-  const { users, deleteUser } = useUsers();
+  const { users, dispatch, isLoading, error, reload } = useUsers();
   const [query, setQuery] = useState("");
 
   const filteredUsers = users.filter(
@@ -45,9 +48,32 @@ export default function AdminManageUsersScreen() {
       {
         text: "Remove",
         style: "destructive",
-        onPress: () => deleteUser(user.email),
+        onPress: async () => {
+          try {
+            await api.delete(`/users/${user.id}`);
+            dispatch({ type: "REMOVE_USER", payload: user.id });
+          } catch (err: any) {
+            const message =
+              err?.response?.data?.error ??
+              "Could not remove user. Is the server running?";
+            Alert.alert("Error", message);
+          }
+        },
       },
     ]);
+  }
+
+  if (isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#E50914" />
+        <Text style={styles.loadingText}>Loading users...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return <ErrorScreen message={error} onRetry={reload} />;
   }
 
   return (
@@ -62,7 +88,7 @@ export default function AdminManageUsersScreen() {
 
       <FlatList
         data={filteredUsers}
-        keyExtractor={(item) => item.email}
+        keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No users found.</Text>
@@ -74,10 +100,12 @@ export default function AdminManageUsersScreen() {
                 {item.name.charAt(0).toUpperCase()}
               </Text>
             </View>
+
             <View style={styles.rowText}>
               <Text style={styles.userName}>{item.name}</Text>
               <Text style={styles.userEmail}>{item.email}</Text>
             </View>
+
             <View
               style={[
                 styles.roleBadge,
@@ -90,9 +118,13 @@ export default function AdminManageUsersScreen() {
                 {ROLE_LABELS[item.role]}
               </Text>
             </View>
+
             <Pressable
               onPress={() => handleDeleteUser(item)}
               style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${item.name}`}
+              accessibilityHint="Shows a confirmation dialog before removing"
             >
               <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
             </Pressable>
@@ -110,6 +142,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
   },
+  centerContainer: {
+    flex: 1,
+    backgroundColor: "#121212",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: { color: "#9A9AA8", marginTop: 12 },
   headerTitle: {
     color: "#FFFFFF",
     fontSize: 20,

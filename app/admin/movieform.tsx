@@ -1,15 +1,18 @@
 import { useMovies } from "@/context/moviecontext";
+import { Movie } from "@/data/movies";
+import { api } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 const COLOR_OPTIONS = [
@@ -24,7 +27,7 @@ const COLOR_OPTIONS = [
 ];
 
 export default function MovieFormScreen() {
-  const { movies, addMovie, updateMovie } = useMovies();
+  const { movies, dispatch } = useMovies();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEditMode = Boolean(id);
 
@@ -33,10 +36,11 @@ export default function MovieFormScreen() {
   const [color, setColor] = useState(COLOR_OPTIONS[0]);
   const [titleError, setTitleError] = useState("");
   const [yearError, setYearError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    const existingMovie = movies.find((m) => m.id === id);
+    const existingMovie = movies.find((m) => String(m.id) === id);
     if (existingMovie) {
       setTitle(existingMovie.title);
       setYear(String(existingMovie.year));
@@ -72,19 +76,30 @@ export default function MovieFormScreen() {
     return valid;
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!validate()) return;
 
-    if (isEditMode && id) {
-      updateMovie(id, { title: title.trim(), year: Number(year), color });
-      Alert.alert("Updated", `"${title.trim()}" has been updated.`, [
-        { text: "OK", onPress: () => router.back() },
-      ]);
-    } else {
-      addMovie({ title: title.trim(), year: Number(year), color });
-      Alert.alert("Added", `"${title.trim()}" has been added.`, [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+    setIsSubmitting(true);
+    const payload = { title: title.trim(), year: Number(year), color };
+
+    try {
+      if (isEditMode && id) {
+        const { data } = await api.patch<Movie>(`/movies/${id}`, payload);
+        dispatch({ type: "UPDATE_MOVIE", payload: data });
+        Alert.alert("Updated", `"${data.title}" has been updated.`, [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      } else {
+        const { data } = await api.post<Movie>("/movies", payload);
+        dispatch({ type: "ADD_MOVIE", payload: data });
+        Alert.alert("Added", `"${data.title}" has been added.`, [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      }
+    } catch (err) {
+      Alert.alert("Error", "Could not save movie. Is the server running?");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -101,6 +116,7 @@ export default function MovieFormScreen() {
         placeholderTextColor="#777"
         value={title}
         onChangeText={setTitle}
+        accessibilityLabel="Movie title"
       />
       {titleError ? <Text style={styles.errorText}>{titleError}</Text> : null}
 
@@ -113,6 +129,7 @@ export default function MovieFormScreen() {
         onChangeText={setYear}
         keyboardType="number-pad"
         maxLength={4}
+        accessibilityLabel="Release year"
       />
       {yearError ? <Text style={styles.errorText}>{yearError}</Text> : null}
 
@@ -131,6 +148,8 @@ export default function MovieFormScreen() {
               { backgroundColor: option },
               color === option && styles.colorSwatchSelected,
             ]}
+            accessibilityRole="button"
+            accessibilityLabel={`Select color ${option}`}
           >
             {color === option && (
               <Ionicons name="checkmark" size={18} color="#FFFFFF" />
@@ -139,10 +158,20 @@ export default function MovieFormScreen() {
         ))}
       </View>
 
-      <Pressable style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>
-          {isEditMode ? "Save Changes" : "Add Movie"}
-        </Text>
+      <Pressable
+        style={styles.saveButton}
+        onPress={handleSave}
+        disabled={isSubmitting}
+        accessibilityRole="button"
+        accessibilityLabel={isEditMode ? "Save changes" : "Add movie"}
+      >
+        {isSubmitting ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.saveButtonText}>
+            {isEditMode ? "Save Changes" : "Add Movie"}
+          </Text>
+        )}
       </Pressable>
     </ScrollView>
   );

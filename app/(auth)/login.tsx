@@ -1,15 +1,20 @@
 import BackButton from "@/components/backbutton";
 import PasswordField from "@/components/passwordfield";
-import { useUsers } from "@/context/usercontext";
+import { api } from "@/services/api";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
-  const { findUserByCredentials } = useUsers();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -40,30 +45,34 @@ export default function LoginScreen() {
     return valid;
   }
 
-  function handleLoginPress() {
+  async function handleLoginPress() {
     setFormError("");
     if (!validate()) return;
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Real API call — this replaces the old local mock-array lookup
+      const { data: user } = await api.post("/users/login", {
+        email: email.trim(),
+        password,
+      });
 
-      const matchedUser = findUserByCredentials(email.trim(), password);
-
-      if (!matchedUser) {
-        setFormError("Invalid email or password");
-        return;
-      }
-
-      if (matchedUser.role === "admin") {
+      if (user.role === "admin") {
         router.replace("/admin/admindashboard");
-      } else if (matchedUser.role === "manager") {
-        router.replace("./cinema-manager");
+      } else if (user.role === "manager") {
+        router.replace("/manager/login");
       } else {
-        router.replace("./registered-user");
+        router.replace("/(tabs)/home");
       }
-    }, 600);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.error ??
+        "Could not reach the server. Is it running?";
+      setFormError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -82,6 +91,7 @@ export default function LoginScreen() {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
+        accessibilityLabel="Email address"
       />
       {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
@@ -95,10 +105,18 @@ export default function LoginScreen() {
 
       {formError ? <Text style={styles.formErrorText}>{formError}</Text> : null}
 
-      <Pressable style={styles.button} onPress={handleLoginPress}>
-        <Text style={styles.buttonText}>
-          {isSubmitting ? "Logging in..." : "Log In"}
-        </Text>
+      <Pressable
+        style={styles.button}
+        onPress={handleLoginPress}
+        disabled={isSubmitting}
+        accessibilityRole="button"
+        accessibilityLabel="Log in"
+      >
+        {isSubmitting ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.buttonText}>Log In</Text>
+        )}
       </Pressable>
 
       <View style={styles.signupRow}>

@@ -1,14 +1,16 @@
 import BackButton from "@/components/backbutton";
 import PasswordField from "@/components/passwordfield";
+import { api } from "@/services/api";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -23,6 +25,8 @@ export default function RegisterScreen() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmError, setConfirmError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function validate() {
     let valid = true;
@@ -64,12 +68,31 @@ export default function RegisterScreen() {
     return valid;
   }
 
-  function handleRegisterPress() {
+  async function handleRegisterPress() {
+    setFormError("");
     if (!validate()) return;
 
-    Alert.alert("Registered", "Account created (demo only, no backend yet).", [
-      { text: "OK", onPress: () => router.replace("/(auth)/welcome") },
-    ]);
+    setIsSubmitting(true);
+    try {
+      // Real POST to the database — creates an actual row in the users table
+      await api.post("/users", {
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        role: "registered",
+      });
+
+      Alert.alert("Registered", "Your account has been created.", [
+        { text: "OK", onPress: () => router.replace("/(auth)/login") },
+      ]);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.error ??
+        "Could not reach the server. Is it running?";
+      setFormError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -86,6 +109,7 @@ export default function RegisterScreen() {
         placeholderTextColor="#777"
         value={name}
         onChangeText={setName}
+        accessibilityLabel="Full name"
       />
       {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
@@ -98,6 +122,7 @@ export default function RegisterScreen() {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
+        accessibilityLabel="Email address"
       />
       {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
@@ -117,8 +142,20 @@ export default function RegisterScreen() {
         error={confirmError}
       />
 
-      <Pressable style={styles.button} onPress={handleRegisterPress}>
-        <Text style={styles.buttonText}>Register</Text>
+      {formError ? <Text style={styles.formErrorText}>{formError}</Text> : null}
+
+      <Pressable
+        style={styles.button}
+        onPress={handleRegisterPress}
+        disabled={isSubmitting}
+        accessibilityRole="button"
+        accessibilityLabel="Register"
+      >
+        {isSubmitting ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.buttonText}>Register</Text>
+        )}
       </Pressable>
     </View>
   );
@@ -146,6 +183,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   errorText: { color: "#FF6B6B", fontSize: 12, marginBottom: 12 },
+  formErrorText: {
+    color: "#FF6B6B",
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 12,
+  },
   button: {
     backgroundColor: "#E50914",
     paddingVertical: 16,
